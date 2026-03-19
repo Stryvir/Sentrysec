@@ -1,0 +1,96 @@
+.splash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  z-index: 9999;
+  transition: opacity 0.65s ease;
+}
+
+.splash--enter {
+  opacity: 1;
+}
+
+.splash--exit {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Content wrapper ── */
+.splash__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Logo + ripple container ── */
+.splash__logo-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 280px;
+  height: 280px;
+}
+
+/* ── Actual PNG logo ── */
+.splash__logo {
+  width: 220px;
+  height: auto;
+  position: relative;
+  z-index: 2;
+  animation:
+    logoIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both,
+    logoPulse 1.6s ease-in-out 0.9s 1 both;
+  filter: drop-shadow(0 8px 28px rgba(45, 106, 79, 0.22));
+}
+
+/* ── Ripple rings ── */
+.splash__ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2.5px solid rgba(45, 106, 79, 0.35);
+  animation: rippleOut 1.4s ease-out 0.8s 1 both;
+  z-index: 1;
+}
+
+.splash__ripple--delay {
+  animation-delay: 1.1s;
+  border-color: rgba(45, 106, 79, 0.18);
+}
+
+/* ── Keyframes ── */
+@keyframes logoIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(20px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes logoPulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.07); filter: drop-shadow(0 10px 32px rgba(45, 106, 79, 0.38)); }
+  100% { transform: scale(1); filter: drop-shadow(0 8px 28px rgba(45, 106, 79, 0.22)); }
+}
+
+@keyframes rippleOut {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
