@@ -4,7 +4,7 @@ import './IdScanStep.css'
 export default function IdScanStep({ onSubmit, onBack }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
-  const [stream, setStream] = useState(null)
+  const streamRef = useRef(null)
   const [capturedImage, setCapturedImage] = useState(null)
   const [cameraError, setCameraError] = useState(false)
 
@@ -14,11 +14,12 @@ export default function IdScanStep({ onSubmit, onBack }) {
   }, [])
 
   async function startCamera() {
+    setCameraError(false)
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       })
-      setStream(mediaStream)
+      streamRef.current = mediaStream
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream
       }
@@ -28,8 +29,9 @@ export default function IdScanStep({ onSubmit, onBack }) {
   }
 
   function stopCamera() {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop())
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
     }
   }
 

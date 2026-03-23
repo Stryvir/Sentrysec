@@ -1,0 +1,8 @@
+{
+  "appId": "com.sentrysec.app",
+  "appName": "SentrySec",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

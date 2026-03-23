@@ -16,7 +16,7 @@ const INITIAL_SIGNUP = {
   agreed: false,
 }
 
-export default function AuthPage() {
+export default function AuthPage({ onLogin }) {
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState(INITIAL_LOGIN)
   const [signupStep, setSignupStep] = useState('form')
@@ -24,6 +24,8 @@ export default function AuthPage() {
   const [hasReadTerms, setHasReadTerms] = useState(false)
   const [scrolledToBottom, setScrolledToBottom] = useState(false)
   const [toastMsg, setToastMsg] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const modalBodyRef = useRef(null)
 
   const isLogin = mode === 'login'
@@ -60,13 +62,13 @@ export default function AuthPage() {
     e.preventDefault()
 
     if (isLogin) {
+      setLoginError('')
       const result = await loginUser({ username: form.username, password: form.password })
       if (!result.success) {
-        showToast(result.error)
+        setLoginError('Incorrect username or password.')
         return
       }
-      showToast(`Welcome back, ${result.user.full_name}!`)
-      // TODO: navigate to dashboard
+      onLogin(result.user)
     } else {
       if (form.password !== form.confirmPassword) {
         showToast('Passwords do not match.')
@@ -136,9 +138,18 @@ export default function AuthPage() {
                 value={form.username} onChange={handleChange} autoComplete="username" required />
 
               <label className="auth__label" htmlFor="password">Password</label>
-              <input id="password" name="password" type="password" className="auth__input"
-                placeholder="Enter your password"
-                value={form.password} onChange={handleChange} autoComplete="current-password" required />
+              <div className="auth__pw-wrap">
+                <input id="password" name="password" type={showPassword ? 'text' : 'password'} className="auth__input"
+                  placeholder="Enter your password"
+                  value={form.password} onChange={handleChange} autoComplete="current-password" required />
+                <button type="button" className="auth__pw-toggle" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
+                  {showPassword
+                    ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  }
+                </button>
+              </div>
+              {loginError && <p className="auth__login-error">{loginError}</p>}
             </>
           )}
 
