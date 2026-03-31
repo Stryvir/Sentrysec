@@ -9,6 +9,32 @@ async function hashPassword(password) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+// ── Activity log helpers ───────────────────────────────────
+const ACTIVITY_LOG_MAX = 25
+
+const MARKER_EMOJIS  = { accident: '🚗', criminal: '🔪', flood: '🌊', fire: '🔥', hazard: '🚧', medical: '🏥' }
+const MARKER_LABELS  = { accident: 'Accident', criminal: 'Criminal Activity', flood: 'Flood', fire: 'Fire', hazard: 'Road Hazard', medical: 'Medical Emergency' }
+
+async function logActivity({ icon, label, sub, badge, badge_type, dest }) {
+  await supabase.from('activity_log').insert({ icon, label, sub: sub || null, badge, badge_type, dest })
+  // Trim to cap: remove oldest records beyond ACTIVITY_LOG_MAX
+  const { data: all } = await supabase.from('activity_log').select('id').order('created_at', { ascending: false })
+  if (all && all.length > ACTIVITY_LOG_MAX) {
+    const toDelete = all.slice(ACTIVITY_LOG_MAX).map(r => r.id)
+    await supabase.from('activity_log').delete().in('id', toDelete)
+  }
+}
+
+export async function getActivityLog() {
+  const { data, error } = await supabase
+    .from('activity_log')
+    .select('id, icon, label, sub, badge, badge_type, dest, created_at')
+    .order('created_at', { ascending: false })
+    .limit(ACTIVITY_LOG_MAX)
+  if (error) return { success: false, data: [] }
+  return { success: true, data: data ?? [] }
+}
+
 // ── Register a new user ──
 export async function registerUser({ fullName, address, contactNumber, email, username, password, barangayIdImage }) {
   const passwordHash = await hashPassword(password)
@@ -50,6 +76,20 @@ export async function loginUser({ username, password }) {
 
   if (passwordHash !== data.password_hash) {
     return { success: false, error: 'Invalid username or password.' }
+  }
+
+  if (data.is_active === false) {
+    const { data: adminData } = await supabase
+      .from('users')
+      .select('contact_number')
+      .eq('role', 'admin')
+      .single()
+    const adminContact = adminData?.contact_number || 'the barangay admin'
+    return {
+      success: false,
+      deactivated: true,
+      error: `Your account has been deactivated.\n\nIf you believe this is a mistake, please contact the barangay admin at ${adminContact}.`
+    }
   }
 
   const { password_hash: _, ...safeUser } = data
@@ -149,7 +189,7 @@ export async function getNotifications() {
   const [{ data: alerts }, { data: memos }] = await Promise.all([
     supabase
       .from('alert_markers')
-      .select('id, title, description, latitude, longitude, created_at')
+      .select('id, title, description, latitude, longitude, address, created_at')
       .eq('is_active', true)
       .order('created_at', { ascending: false }),
     supabase
@@ -164,6 +204,7 @@ export async function getNotifications() {
       type: 'alert',
       title: a.title,
       description: a.description || '',
+      address: a.address || '',
       latitude: a.latitude,
       longitude: a.longitude,
       created_at: a.created_at,
@@ -192,6 +233,7 @@ export async function sendSOSAlert({ userId, fullName, latitude, longitude, addr
   if (error) {
     return { success: false, error: 'Failed to send SOS alert.' }
   }
+  await logActivity({ icon: '🚨', label: `SOS Alert: ${fullName}`, sub: address?.slice(0, 45), badge: 'Active SOS', badge_type: 'red', dest: 'sos' })
   return { success: true }
 }
 
@@ -215,7 +257,7 @@ export async function getAdminStats() {
     supabase.from('tanod_schedules').select('id, name, time_shift, contact_number, status, created_at').order('created_at', { ascending: false }),
     supabase.from('barangay_memorandums').select('id, title, content, created_at').order('created_at', { ascending: false }),
     supabase.from('sos_alerts').select('id, full_name, address, latitude, longitude, created_at').eq('status', 'active').order('created_at', { ascending: false }),
-    supabase.from('users').select('id, full_name, address, contact_number, email, created_at').eq('role', 'user').order('created_at', { ascending: false }),
+    supabase.from('users').select('*').eq('role', 'user').order('created_at', { ascending: false }),
     supabase.from('alert_markers').select('id, is_active').order('created_at', { ascending: false }),
     supabase.from('safety_emergency_contacts').select('id, name, role, contact_number').order('created_at', { ascending: true }),
     supabase.from('safety_evacuation_areas').select('id, name, address, description, latitude, longitude').order('created_at', { ascending: true }),
@@ -237,6 +279,12 @@ export async function getAdminStats() {
   }
 }
 
+// ── Admin: deactivate / reactivate a resident account ──
+export async function setResidentActive({ id, isActive }) {
+  const { error } = await supabase.from('users').update({ is_active: isActive }).eq('id', id)
+  return { success: !error, error: error?.message }
+}
+
 // ── Admin: create tanod account ──
 export async function createTanodAccount({ fullName, username, password, contactNumber }) {
   const passwordHash = await hashPassword(password)
@@ -253,11 +301,17 @@ export async function createTanodAccount({ fullName, username, password, contact
     if (error.code === '23505') return { success: false, error: 'Username already exists.' }
     return { success: false, error: 'Failed to create account.' }
   }
+  await logActivity({ icon: '👮', label: `Tanod account created: ${fullName}`, badge: 'Account', badge_type: 'blue', dest: 'schedules' })
   return { success: true }
 }
 
 // ── Admin: delete tanod account ──
 export async function deleteTanodAccount(id) {
+  // Fetch the tanod's full_name to match schedules
+  const { data: tanod } = await supabase.from('users').select('full_name').eq('id', id).single()
+  if (tanod?.full_name) {
+    await supabase.from('tanod_schedules').delete().eq('name', tanod.full_name)
+  }
   const { error } = await supabase.from('users').delete().eq('id', id)
   return { success: !error }
 }
@@ -266,6 +320,7 @@ export async function deleteTanodAccount(id) {
 export async function postMemorandum({ title, content }) {
   const { error } = await supabase.from('barangay_memorandums').insert({ title, content })
   if (error) return { success: false, error: 'Failed to post memorandum.' }
+  await logActivity({ icon: '📋', label: `Memo published: "${title}"`, badge: 'Memo', badge_type: 'blue', dest: 'memorandums' })
   return { success: true }
 }
 
@@ -275,9 +330,24 @@ export async function deleteMemorandum(id) {
   return { success: !error }
 }
 
+// ── Tanod: get active SOS alerts ──
+export async function getActiveSosAlerts() {
+  const { data, error } = await supabase
+    .from('sos_alerts')
+    .select('id, full_name, address, latitude, longitude, created_at')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+  if (error) return { success: false, data: [] }
+  return { success: true, data: data ?? [] }
+}
+
 // ── Admin: resolve SOS alert ──
 export async function resolveSosAlert(id) {
+  const { data: alert } = await supabase.from('sos_alerts').select('full_name, address').eq('id', id).single()
   const { error } = await supabase.from('sos_alerts').update({ status: 'resolved' }).eq('id', id)
+  if (!error) {
+    await logActivity({ icon: '✅', label: `SOS Resolved: ${alert?.full_name ?? 'Unknown'}`, sub: alert?.address?.slice(0, 45), badge: 'Resolved', badge_type: 'green', dest: 'sos-history' })
+  }
   return { success: !error }
 }
 
@@ -293,7 +363,7 @@ export async function getSosHistory() {
 }
 
 // ── Admin: add tanod schedule ──
-export async function addTanodSchedule(entries) {
+export async function addTanodSchedule(entries, action = 'added') {
   // accepts a single object or an array of objects
   const rows = (Array.isArray(entries) ? entries : [entries]).map(({ name, timeShift, contactNumber }) => ({
     name,
@@ -303,6 +373,8 @@ export async function addTanodSchedule(entries) {
   }))
   const { error } = await supabase.from('tanod_schedules').insert(rows)
   if (error) return { success: false, error: error.message ?? 'Failed to add schedule.' }
+  const namesList = [...new Set(rows.map(r => r.name))].join(', ')
+  await logActivity({ icon: '📅', label: `Schedule ${action}: ${namesList}`, badge: 'Schedule', badge_type: 'gray', dest: 'schedules' })
   return { success: true }
 }
 
@@ -322,12 +394,21 @@ export async function deleteScheduleEntry(id) {
 export async function postAlertMarker({ title, description, latitude, longitude, address }) {
   const { error } = await supabase.from('alert_markers').insert({ title, description, latitude, longitude, is_active: true, address: address || '' })
   if (error) return { success: false, error: 'Failed to post alert.' }
+  const emoji = MARKER_EMOJIS[description] ?? '⚠️'
+  const typeLabel = MARKER_LABELS[description] ?? 'Alert'
+  await logActivity({ icon: emoji, label: `Alert posted: ${title}`, sub: typeLabel, badge: 'Active', badge_type: 'red', dest: 'alerts' })
   return { success: true }
 }
 
 // ── Admin: deactivate alert marker ──
 export async function deactivateAlertMarker(id) {
+  const { data: marker } = await supabase.from('alert_markers').select('title, description').eq('id', id).single()
   const { error } = await supabase.from('alert_markers').update({ is_active: false }).eq('id', id)
+  if (!error && marker) {
+    const emoji = MARKER_EMOJIS[marker.description] ?? '⚠️'
+    const typeLabel = MARKER_LABELS[marker.description] ?? 'Alert'
+    await logActivity({ icon: '✓', label: `Alert deactivated: ${marker.title}`, sub: typeLabel, badge: 'Inactive', badge_type: 'gray', dest: 'alerts' })
+  }
   return { success: !error }
 }
 
@@ -335,6 +416,7 @@ export async function deactivateAlertMarker(id) {
 export async function addEmergencyContact({ name, role, contactNumber }) {
   const { error } = await supabase.from('safety_emergency_contacts').insert({ name, role, contact_number: contactNumber })
   if (error) return { success: false, error: error.message ?? 'Failed to add contact.' }
+  await logActivity({ icon: '📞', label: `Emergency contact added: ${name}`, sub: role || null, badge: 'Contact', badge_type: 'blue', dest: 'safetyguide' })
   return { success: true }
 }
 
@@ -348,6 +430,7 @@ export async function deleteEmergencyContact(id) {
 export async function addEvacuationArea({ name, latitude, longitude, description, address }) {
   const { error } = await supabase.from('safety_evacuation_areas').insert({ name, latitude, longitude, description: description || '', address: address || '' })
   if (error) return { success: false, error: error.message ?? 'Failed to add area.' }
+  await logActivity({ icon: '🏠', label: `Evacuation area added: ${name}`, sub: address || null, badge: 'Evac', badge_type: 'green', dest: 'evacuation' })
   return { success: true }
 }
 
@@ -361,6 +444,7 @@ export async function deleteEvacuationArea(id) {
 export async function addDisasterPlan({ title, content }) {
   const { error } = await supabase.from('safety_disaster_plans').insert({ title, content })
   if (error) return { success: false, error: error.message ?? 'Failed to add plan.' }
+  await logActivity({ icon: '📖', label: `Disaster plan added: ${title}`, badge: 'Plan', badge_type: 'blue', dest: 'safetyguide' })
   return { success: true }
 }
 
@@ -368,6 +452,62 @@ export async function addDisasterPlan({ title, content }) {
 export async function deleteDisasterPlan(id) {
   const { error } = await supabase.from('safety_disaster_plans').delete().eq('id', id)
   return { success: !error }
+}
+
+// ── Admin: update tanod account ──
+export async function updateTanodAccount({ id, fullName, username, contactNumber, password }) {
+  const updates = { full_name: fullName, contact_number: contactNumber || '' }
+  if (username) updates.username = username
+  if (password) updates.password_hash = await hashPassword(password)
+  const { error } = await supabase.from('users').update(updates).eq('id', id)
+  return { success: !error, error: error?.message }
+}
+
+// ── Admin: update schedule entry time shift ──
+export async function updateScheduleEntry({ id, timeShift }) {
+  const { error } = await supabase.from('tanod_schedules').update({ time_shift: timeShift }).eq('id', id)
+  return { success: !error, error: error?.message }
+}
+
+// ── Admin: update alert marker ──
+export async function updateAlertMarker({ id, title, description, latitude, longitude, address }) {
+  const { error } = await supabase.from('alert_markers').update({ title, description, latitude, longitude, address: address || '' }).eq('id', id)
+  return { success: !error, error: error?.message }
+}
+
+// ── Admin/Tanod: delete alert marker completely ──
+export async function deleteAlertMarker(id) {
+  const { error } = await supabase.from('alert_markers').delete().eq('id', id)
+  return { success: !error }
+}
+
+// ── Admin: update emergency contact ──
+export async function updateEmergencyContact({ id, name, role, contactNumber }) {
+  const { error } = await supabase.from('safety_emergency_contacts').update({ name, role, contact_number: contactNumber }).eq('id', id)
+  return { success: !error, error: error?.message }
+}
+
+// ── Admin/Tanod: update evacuation area ──
+export async function updateEvacuationArea({ id, name, description, latitude, longitude, address }) {
+  const { error } = await supabase.from('safety_evacuation_areas').update({ name, description: description || '', latitude, longitude, address: address || '' }).eq('id', id)
+  return { success: !error, error: error?.message }
+}
+
+// ── Admin: update memorandum ──
+export async function updateMemorandum({ id, title, content }) {
+  const { error } = await supabase.from('barangay_memorandums').update({ title, content }).eq('id', id)
+  return { success: !error, error: error?.message }
+}
+
+// ── Admin: update disaster plan ──
+export async function updateDisasterPlan({ id, title, content }) {
+  const { error } = await supabase.from('safety_disaster_plans').update({ title, content }).eq('id', id)
+  return { success: !error, error: error?.message }
+}
+
+export async function updateProfilePhoto({ userId, photoData }) {
+  const { error } = await supabase.from('users').update({ profile_photo: photoData }).eq('id', userId)
+  return { success: !error, error: error?.message }
 }
 
 export async function saveUserLocation({ userId, latitude, longitude, address }) {

@@ -65,7 +65,7 @@ export default function AuthPage({ onLogin }) {
       setLoginError('')
       const result = await loginUser({ username: form.username, password: form.password })
       if (!result.success) {
-        setLoginError('Incorrect username or password.')
+        setLoginError(result.deactivated ? result.error : 'Incorrect username or password.')
         return
       }
       onLogin(result.user)

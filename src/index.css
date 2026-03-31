@@ -9,9 +9,11 @@ body {
   background-color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-y: auto;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+  overflow-y: auto;
 }

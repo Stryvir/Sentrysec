@@ -1,23 +1,52 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SplashScreen from './components/SplashScreen'
 import AuthPage from './components/AuthPage'
 import UserDashboard from './components/user/UserDashboard'
 import AdminDashboard from './components/admin/AdminDashboard'
+import TanodDashboard from './components/tanod/TanodDashboard'
+import { requestNotifPermission } from './db/localNotif'
 import './App.css'
+
+const SESSION_KEY = 'sentrysec_session'
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+function saveSession(user) {
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(user)) } catch {}
+}
+
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY) } catch {}
+}
 
 export default function App() {
   const [splashDone, setSplashDone] = useState(false)
-  const [loggedInUser, setLoggedInUser] = useState(null)
+  const [loggedInUser, setLoggedInUser] = useState(() => loadSession())
+
+  // Request OS notification permission once splash is gone
+  useEffect(() => {
+    if (splashDone) requestNotifPermission()
+  }, [splashDone])
 
   function handleLogin(user) {
+    saveSession(user)
     setLoggedInUser(user)
   }
 
   function handleUserUpdate(updatedUser) {
+    saveSession(updatedUser)
     setLoggedInUser(updatedUser)
   }
 
   function handleLogout() {
+    clearSession()
     setLoggedInUser(null)
   }
 
@@ -35,8 +64,7 @@ export default function App() {
   const role = loggedInUser.role ?? 'user'
 
   if (role === 'tanod') {
-    // Tanod dashboard — coming soon
-    return <div style={{padding:32}}>Tanod Dashboard (coming soon)</div>
+    return <TanodDashboard user={loggedInUser} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
   }
 
   if (role === 'admin') {

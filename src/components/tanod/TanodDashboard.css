@@ -1,0 +1,979 @@
+/* ── Shell ─────────────────────────────────────────────── */
+.tnod-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #f4f6f4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+}
+
+/* ── Top bar ───────────────────────────────────────────── */
+.tnod-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a3c1a;
+  color: #fff;
+  padding: 12px 18px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  flex-shrink: 0;
+}
+
+.tnod-topbar__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #fff;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.tnod-topbar__role {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.tnod-topbar__sos {
+  background: #c62828;
+  border: none;
+  color: #fff;
+  border-radius: 20px;
+  padding: 6px 13px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: tnod-pulse 1.5s infinite;
+}
+
+.tnod-topbar__sos-count {
+  background: #fff;
+  color: #c62828;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+@keyframes tnod-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+
+/* ── Body ──────────────────────────────────────────────── */
+.tnod-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Content ───────────────────────────────────────────── */
+.tnod-content {
+  padding: 16px;
+  padding-bottom: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Loading ───────────────────────────────────────────── */
+.tnod-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 20px;
+  color: #666;
+  font-size: 0.88rem;
+}
+
+.tnod-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #ccc;
+  border-top-color: #2d6a2d;
+  border-radius: 50%;
+  animation: tnod-spin 0.8s linear infinite;
+}
+
+@keyframes tnod-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Home page ─────────────────────────────────────────── */
+.tnod-home-title {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #1a3c1a;
+  margin: 0;
+}
+
+.tnod-home-sub {
+  font-size: 0.78rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── SOS Banner ────────────────────────────────────────── */
+.tnod-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 14px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.tnod-banner--sos {
+  background: #fff3f3;
+  border: 2px solid #c62828;
+  animation: tnod-pulse 1.5s infinite;
+}
+
+.tnod-banner__icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.tnod-banner__body {
+  flex: 1;
+}
+
+.tnod-banner__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #c62828;
+  margin: 0;
+}
+
+.tnod-banner__sub {
+  font-size: 0.75rem;
+  color: #555;
+  margin: 2px 0 0;
+}
+
+.tnod-banner__btn {
+  background: #c62828;
+  color: #fff;
+  border-radius: 16px;
+  padding: 5px 13px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Cards grid ────────────────────────────────────────── */
+.tnod-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tnod-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 13px 11px;
+  border: 1px solid #e0e8e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tnod-card__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.tnod-card__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #555;
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+}
+
+.tnod-card__icon {
+  width: 20px;
+  height: 20px;
+  color: #2d6a2d;
+  flex-shrink: 0;
+}
+
+.tnod-card__num {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a3c1a;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.tnod-card__viewall {
+  font-size: 0.68rem;
+  color: #2d6a2d;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ── Tags ──────────────────────────────────────────────── */
+.tnod-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.71rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.tnod-tag--green  { background: #e6f4e6; color: #2d6a2d; }
+.tnod-tag--red    { background: #fdecea; color: #c62828; }
+.tnod-tag--gray   { background: #eee; color: #666; }
+.tnod-tag--blue   { background: #e8f0fe; color: #1a56db; }
+
+/* ── Badges ────────────────────────────────────────────── */
+.tnod-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.tnod-badge--red   { background: #fdecea; color: #c62828; }
+.tnod-badge--green { background: #e6f4e6; color: #2d6a2d; }
+.tnod-badge--blue  { background: #e8f0fe; color: #1a56db; }
+.tnod-badge--gray  { background: #eee; color: #666; }
+
+/* ── Section label ─────────────────────────────────────── */
+.tnod-section-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #888;
+  letter-spacing: 1.2px;
+  margin: 4px 0 0;
+}
+
+/* ── Activity rows ─────────────────────────────────────── */
+.tnod-activity-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e0e8e0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.tnod-activity-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.tnod-activity-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.tnod-activity-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #1a3c1a;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tnod-activity-sub {
+  font-size: 0.73rem;
+  color: #888;
+  margin: 2px 0 0;
+}
+
+/* ── Activity search ──────────────────────────────────── */
+.tnod-act-search-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tnod-act-search {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid #d0dbd0;
+  border-radius: 20px;
+  padding: 5px 12px;
+  gap: 6px;
+  flex: 1;
+  max-width: 220px;
+}
+
+.tnod-act-search-icon {
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.tnod-act-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.8rem;
+  color: #222;
+  flex: 1;
+  min-width: 0;
+}
+
+.tnod-act-search input::placeholder {
+  color: #aaa;
+}
+
+.tnod-act-search-clear {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ── Activity pagination ───────────────────────────────── */
+.tnod-act-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.tnod-act-pgbtn {
+  background: #fff;
+  border: 1.5px solid #d0dbd0;
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2d6a2d;
+  cursor: pointer;
+}
+
+.tnod-act-pgbtn:disabled {
+  color: #bbb;
+  border-color: #e8e8e8;
+  cursor: default;
+}
+
+.tnod-act-pginfo {
+  font-size: 0.78rem;
+  color: #666;
+  font-weight: 600;
+}
+
+/* ── Empty card ────────────────────────────────────────── */
+.tnod-empty-card {
+  background: #fff;
+  border: 1px solid #e0e8e0;
+  border-radius: 12px;
+  padding: 26px 16px;
+  font-size: 0.85rem;
+  color: #888;
+  text-align: center;
+}
+
+/* ── Page header ───────────────────────────────────────── */
+.tnod-page-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.tnod-back {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 0;
+  color: #1a3c1a;
+  flex-shrink: 0;
+}
+
+.tnod-back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tnod-page-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a3c1a;
+  margin: 0;
+  flex: 1;
+}
+
+/* ── Duty banner ───────────────────────────────────────── */
+.tnod-duty-banner {
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tnod-duty-banner--on  { background: #e6f4e6; color: #1a5c1a; border: 1.5px solid #a5d6a7; }
+.tnod-duty-banner--off { background: #f0f0f0; color: #555;    border: 1.5px solid #ccc; }
+
+/* ── My Schedule rows ──────────────────────────────────── */
+.tnod-sched-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e0e8e0;
+  border-radius: 12px;
+  padding: 14px 14px;
+}
+
+.tnod-sched-row--today {
+  border-color: #2d6a2d;
+  background: #f0fbf0;
+}
+
+.tnod-sched-row__icon { font-size: 1.3rem; flex-shrink: 0; }
+
+.tnod-sched-row__body { flex: 1; }
+
+.tnod-sched-row__shift {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a3c1a;
+  margin: 0;
+}
+
+/* ── SOS cards ─────────────────────────────────────────── */
+.tnod-sos-card {
+  background: #fff;
+  border: 2px solid #e53935;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tnod-sos-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tnod-sos-card__icon { font-size: 1.4rem; flex-shrink: 0; }
+
+.tnod-sos-card__info { flex: 1; min-width: 0; }
+
+.tnod-sos-card__name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a3c1a;
+  margin: 0;
+}
+
+.tnod-sos-card__time {
+  font-size: 0.72rem;
+  color: #888;
+  margin: 2px 0 0;
+}
+
+.tnod-sos-card__address {
+  font-size: 0.84rem;
+  color: #333;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.tnod-sos-card__coords {
+  font-size: 0.73rem;
+  color: #888;
+  margin: 0;
+  font-family: monospace;
+}
+
+.tnod-resolve-btn {
+  width: 100%;
+  padding: 12px;
+  background: #2d6a2d;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+}
+
+.tnod-resolve-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Info page cards ───────────────────────────────────── */
+.tnod-info-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid #e0e8e0;
+  border-radius: 14px;
+  padding: 18px 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a3c1a;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.tnod-info-icon {
+  width: 26px;
+  height: 26px;
+  color: #2d6a2d;
+  flex-shrink: 0;
+}
+
+/* ── Schedules list ────────────────────────────────────── */
+.tnod-duty-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #2d6a2d;
+  letter-spacing: 1.2px;
+  margin: 6px 0 2px;
+}
+
+.tnod-duty-label--off { color: #888; }
+
+.tnod-sched-group {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e0e8e0;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.tnod-sched-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px;
+  background: none;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tnod-sched-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #e6f4e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tnod-sched-avatar svg {
+  width: 20px;
+  height: 20px;
+  color: #2d6a2d;
+}
+
+.tnod-sched-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1a3c1a;
+  margin: 0;
+}
+
+.tnod-you-tag {
+  color: #2d6a2d;
+  font-weight: 600;
+}
+
+.tnod-sched-detail {
+  font-size: 0.75rem;
+  color: #888;
+  margin: 2px 0 0;
+}
+
+.tnod-sched-rows {
+  border-top: 1px solid #e8f0e8;
+  padding: 8px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tnod-shift-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #f8faf8;
+}
+
+.tnod-shift-row--today { background: #e6f4e6; }
+
+.tnod-shift-text {
+  font-size: 0.8rem;
+  color: #333;
+  margin: 0;
+}
+
+/* ── Safety guide ──────────────────────────────────────── */
+.tnod-sg-box {
+  border-radius: 12px;
+  border: 1px solid #e0e8e0;
+  background: #fff;
+  overflow: hidden;
+}
+
+.tnod-sg-box__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  width: 100%;
+  font-size: 0.83rem;
+  font-weight: 800;
+  color: #1a3c1a;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tnod-sg-chevron {
+  width: 18px;
+  height: 18px;
+  color: #2d6a2d;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.tnod-sg-chevron.open { transform: rotate(180deg); }
+
+.tnod-sg-box__body {
+  padding: 0 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid #e8f0e8;
+}
+
+.tnod-sg-row {
+  padding-top: 10px;
+}
+
+.tnod-sg-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1a3c1a;
+  margin: 0;
+}
+
+.tnod-sg-sub {
+  font-size: 0.78rem;
+  color: #666;
+  margin: 3px 0 0;
+  line-height: 1.4;
+}
+
+.tnod-sg-empty {
+  font-size: 0.82rem;
+  color: #aaa;
+  padding-top: 10px;
+  margin: 0;
+}
+
+/* ── Memorandums ───────────────────────────────────────── */
+.tnod-memo-card {
+  background: #fff;
+  border: 1.5px solid #c8d8c8;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tnod-memo-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1a3c1a;
+  margin: 0;
+}
+
+.tnod-memo-date {
+  font-size: 0.72rem;
+  color: #888;
+}
+
+.tnod-memo-content {
+  font-size: 0.84rem;
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+/* ── Evacuation cards ──────────────────────────────────── */
+.tnod-evac-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e0e8e0;
+  border-radius: 12px;
+  padding: 14px 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.tnod-evac-card__emoji { font-size: 1.5rem; flex-shrink: 0; }
+
+.tnod-evac-card__body { flex: 1; min-width: 0; }
+
+.tnod-evac-card__name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1a3c1a;
+  margin: 0;
+}
+
+.tnod-evac-card__sub {
+  font-size: 0.76rem;
+  color: #666;
+  margin: 3px 0 0;
+}
+
+/* ── Profile ───────────────────────────────────────────── */
+.tnod-profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 4px;
+}
+
+.tnod-profile-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2.5px solid #1a3c1a;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tnod-profile-avatar svg {
+  width: 52px;
+  height: 52px;
+  color: #1a3c1a;
+}
+
+.tnod-photo-cam-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1a3c1a;
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.tnod-photo-del-btn {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.tnod-profile-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a3c1a;
+  text-align: center;
+  margin: 0;
+}
+
+.tnod-role-badge {
+  background: #1a3c1a;
+  color: #fff;
+  border-radius: 20px;
+  padding: 3px 14px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.tnod-profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tnod-profile-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #444;
+  letter-spacing: 0.3px;
+}
+
+.tnod-profile-readonly {
+  background: #f4f4f4;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 11px 12px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.tnod-profile-input {
+  background: #fff;
+  border: 1.5px solid #ccc;
+  border-radius: 8px;
+  padding: 11px 12px;
+  font-size: 0.9rem;
+  color: #222;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tnod-profile-input:focus { border-color: #2d6a2d; }
+
+.tnod-feedback { font-size: 0.8rem; text-align: center; }
+.tnod-feedback--error   { color: #c0392b; }
+.tnod-feedback--success { color: #2d6a2d; font-weight: 600; }
+
+.tnod-update-btn {
+  width: 100%;
+  padding: 14px;
+  background: #1a3c1a;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+
+.tnod-update-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.tnod-logout-btn {
+  width: 100%;
+  padding: 14px;
+  background: #c0392b;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+
+/* ── Bottom nav ────────────────────────────────────────── */
+.tnod-bottomnav {
+  display: flex;
+  background: #fff;
+  border-top: 1px solid #e0e8e0;
+  padding-bottom: env(safe-area-inset-bottom);
+  flex-shrink: 0;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.07);
+}
+
+.tnod-navbtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: color 0.15s;
+}
+
+.tnod-navbtn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tnod-navbtn.active {
+  color: #2d6a2d;
+}
+
+.tnod-navbtn.active svg {
+  stroke: #2d6a2d;
+}

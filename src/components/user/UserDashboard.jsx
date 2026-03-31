@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { Geolocation } from '@capacitor/geolocation'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { saveUserLocation, sendSOSAlert, getNotifications, getTanodSchedules, getEmergencyContacts, getEvacuationAreas, getDisasterPlans, updateUserProfile, getMemorandums, submitFeedback, getUserFeedback } from '../../db/auth'
+import { saveUserLocation, sendSOSAlert, getNotifications, getTanodSchedules, getEmergencyContacts, getEvacuationAreas, getDisasterPlans, updateUserProfile, getMemorandums, submitFeedback, getUserFeedback, updateProfilePhoto } from '../../db/auth'
+import { showNotif } from '../../db/localNotif'
 import './UserDashboard.css'
 
 // Fix default leaflet marker icons (broken in Vite builds)
@@ -67,8 +68,24 @@ async function fetchAddress(lat, lng) {
   }
 }
 
+const USER_SEARCH_PAGES = [
+  { label: 'Home',                  dest: 'home' },
+  { label: 'Info',                  dest: 'info' },
+  { label: 'Tanod Schedules',       dest: 'schedules' },
+  { label: 'Safety Guide',          dest: 'safetyguide' },
+  { label: 'Emergency Contacts',    dest: 'emergency' },
+  { label: 'Evacuation Areas',      dest: 'evacuation' },
+  { label: 'Barangay Memorandums',  dest: 'memorandums' },
+  { label: 'Feedback',              dest: 'feedback' },
+  { label: 'Profile',               dest: 'profile' },
+  { label: 'About the App',         dest: 'about' },
+  { label: 'Developers',            dest: 'developers' },
+]
+
 export default function UserDashboard({ user, onLogout, onUserUpdate }) {
   const [page, setPage] = useState('home') // 'home' | 'info' | 'profile'
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQ, setSearchQ] = useState('')
   const [position, setPosition] = useState(null)
   const [address, setAddress] = useState('')
   const [locating, setLocating] = useState(true)
@@ -183,7 +200,25 @@ export default function UserDashboard({ user, onLogout, onUserUpdate }) {
   }, [])
 
   useEffect(() => {
-    getNotifications().then(n => setNotifications(n))
+    const notifiedIds = { current: null }
+    async function pollNotifs() {
+      const n = await getNotifications()
+      setNotifications(n)
+      if (notifiedIds.current === null) {
+        // First load — just record current IDs, don't spam
+        notifiedIds.current = new Set(n.map(x => x.id))
+      } else {
+        n.forEach(x => {
+          if (!notifiedIds.current.has(x.id)) {
+            showNotif({ title: x.title ?? 'New Alert', body: x.address ?? x.description ?? '' })
+            notifiedIds.current.add(x.id)
+          }
+        })
+      }
+    }
+    pollNotifs()
+    const timer = setInterval(pollNotifs, 30000)
+    return () => clearInterval(timer)
   }, [])
 
   useEffect(() => {
@@ -448,6 +483,11 @@ export default function UserDashboard({ user, onLogout, onUserUpdate }) {
     const [updating, setUpdating] = useState(false)
     const [updateError, setUpdateError] = useState('')
     const [updateSuccess, setUpdateSuccess] = useState(false)
+    const [photo, setPhoto] = useState(user?.profile_photo ?? null)
+    const [photoSaving, setPhotoSaving] = useState(false)
+    const [photoError, setPhotoError] = useState('')
+    const [deleteConfirm, setDeleteConfirm] = useState(false)
+    const fileInputRef = useRef(null)
 
     async function handleUpdate() {
       setUpdating(true)
@@ -468,18 +508,82 @@ export default function UserDashboard({ user, onLogout, onUserUpdate }) {
       }
     }
 
+    async function handlePhotoChange(e) {
+      const file = e.target.files[0]
+      if (!file) return
+      setPhotoSaving(true); setPhotoError('')
+      const reader = new FileReader()
+      reader.onload = async ev => {
+        const base64 = ev.target.result
+        const res = await updateProfilePhoto({ userId: user.id, photoData: base64 })
+        setPhotoSaving(false)
+        if (!res.success) { setPhotoError('Failed to upload photo.'); return }
+        setPhoto(base64)
+        if (onUserUpdate) onUserUpdate({ ...user, profile_photo: base64 })
+      }
+      reader.onerror = () => { setPhotoSaving(false); setPhotoError('Failed to read file.') }
+      reader.readAsDataURL(file)
+      e.target.value = ''
+    }
+
+    async function handleDeletePhoto() {
+      setPhotoSaving(true); setPhotoError(''); setDeleteConfirm(false)
+      const res = await updateProfilePhoto({ userId: user.id, photoData: null })
+      setPhotoSaving(false)
+      if (!res.success) { setPhotoError('Failed to delete photo.'); return }
+      setPhoto(null)
+      if (onUserUpdate) onUserUpdate({ ...user, profile_photo: null })
+    }
+
     return (
       <div className="dashboard__content">
         {/* Avatar + name */}
         <div className="profile__header">
-          <div className="dashboard__profile-avatar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
+          <div className="profile__avatar-wrap" style={{ position: 'relative', display: 'inline-block' }}>
+            <div className="dashboard__profile-avatar" style={{ overflow: 'hidden' }}>
+              {photo
+                ? <img src={photo} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                )}
+            </div>
+            {photo && (
+              <button
+                type="button"
+                className="usr-photo-del-btn"
+                onClick={() => setDeleteConfirm(true)}
+                title="Remove photo"
+              >✕</button>
+            )}
+            <button
+              type="button"
+              className="usr-photo-cam-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={photoSaving}
+              title={photo ? 'Change photo' : 'Upload photo'}
+            >
+              {photoSaving ? '…' : '📷'}
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
           </div>
           <p className="dashboard__profile-name">{user?.full_name ?? user?.email ?? 'User'}</p>
+          {photoError && <p className="profile__feedback profile__feedback--error" style={{ marginTop: 4 }}>{photoError}</p>}
         </div>
+
+        {deleteConfirm && (
+          <div className="adm-popup-overlay" onClick={() => setDeleteConfirm(false)}>
+            <div className="adm-popup-sheet" style={{ padding: '1.5rem', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+              <p style={{ marginBottom: '1rem', fontWeight: 600 }}>Remove profile photo?</p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                <button className="profile__update-btn" style={{ flex: 1 }} onClick={handleDeletePhoto}>Remove</button>
+                <button className="dashboard__logout-btn" style={{ flex: 1, marginTop: 0 }} onClick={() => setDeleteConfirm(false)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Editable fields */}
         <div className="profile__fields">
@@ -905,10 +1009,26 @@ export default function UserDashboard({ user, onLogout, onUserUpdate }) {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {notifications.filter(n => n.type === 'alert').map(a => (
-              <Marker key={a.id} position={[a.latitude, a.longitude]} icon={getAlertIcon(a.description)} />
+              <Marker key={a.id} position={[a.latitude, a.longitude]} icon={getAlertIcon(a.description)}>
+                <Popup>
+                  <div style={{ minWidth: 160, fontFamily: 'inherit' }}>
+                    <p style={{ fontWeight: 700, margin: '0 0 4px', fontSize: '0.88rem' }}>{a.title}</p>
+                    {a.description && <p style={{ margin: '0 0 2px', fontSize: '0.78rem', color: '#dc2626' }}>{a.description}</p>}
+                    {a.address && <p style={{ margin: 0, fontSize: '0.76rem', color: '#6b7280' }}>📍 {a.address}</p>}
+                  </div>
+                </Popup>
+              </Marker>
             ))}
             {evacuationAreas.filter(a => a.latitude && a.longitude).map(a => (
-              <Marker key={`evac_${a.id}`} position={[a.latitude, a.longitude]} icon={evacuationAreaIcon} />
+              <Marker key={`evac_${a.id}`} position={[a.latitude, a.longitude]} icon={evacuationAreaIcon}>
+                <Popup>
+                  <div style={{ minWidth: 160, fontFamily: 'inherit' }}>
+                    <p style={{ fontWeight: 700, margin: '0 0 4px', fontSize: '0.88rem' }}>🏠 {a.name}</p>
+                    {a.address && <p style={{ margin: '0 0 2px', fontSize: '0.76rem', color: '#6b7280' }}>📍 {a.address}</p>}
+                    {a.description && <p style={{ margin: 0, fontSize: '0.76rem', color: '#374151' }}>{a.description}</p>}
+                  </div>
+                </Popup>
+              </Marker>
             ))}
             {position && (
               <>
@@ -1081,6 +1201,35 @@ export default function UserDashboard({ user, onLogout, onUserUpdate }) {
         </nav>
       </div>
 
+      {/* Global search overlay */}
+      {searchOpen && (
+        <div className="gs-overlay" onClick={() => { setSearchOpen(false); setSearchQ('') }}>
+          <div className="gs-box" onClick={e => e.stopPropagation()}>
+            <div className="gs-input-row">
+              <span className="gs-icon">🔍</span>
+              <input
+                className="gs-input"
+                autoFocus
+                placeholder="Search pages…"
+                value={searchQ}
+                onChange={e => setSearchQ(e.target.value)}
+              />
+              <button className="gs-close" onClick={() => { setSearchOpen(false); setSearchQ('') }}>✕</button>
+            </div>
+            <div className="gs-results">
+              {USER_SEARCH_PAGES
+                .filter(p => p.label.toLowerCase().includes(searchQ.toLowerCase()))
+                .map(p => (
+                  <button key={p.dest} className="gs-result-item" onClick={() => { setPage(p.dest); setDrawerOpen(false); setSearchOpen(false); setSearchQ('') }}>
+                    {p.label}
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="dashboard__topbar">
         <button className="dashboard__menu" onClick={() => setDrawerOpen(true)}>
@@ -1091,6 +1240,9 @@ export default function UserDashboard({ user, onLogout, onUserUpdate }) {
           </svg>
         </button>
         <span className="dashboard__title">SENTRYSEC</span>
+        <button className="dashboard__topbtn" style={{ marginRight: 4 }} onClick={() => setSearchOpen(true)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="20" height="20"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
         <button className="dashboard__topbtn notif-bell-btn" onClick={() => {
           const newSeen = new Set([...seenIds, ...notifications.map(n => n.id)])
           setSeenIds(newSeen)
